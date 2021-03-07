@@ -1,0 +1,119 @@
+Основы NLP для текста
+
+В этой статье мы рассмотрим темы:
+
+Токенизация по предложениям.
+Токенизация по словам.
+Лемматизация и стемминг текста.
+Стоп-слова.
+Регулярные выражения.
+Мешок слов.
+TF-IDF.
+
+1. Токенизация по предложениям
+
+Токенизация (иногда – сегментация) по предложениям – это процесс разделения письменного языка на предложения-компоненты. Идея выглядит довольно простой. В английском и некоторых других языках мы можем вычленять предложение каждый раз, когда находим определенный знак пунктуации – точку.
+
+Но даже в английском эта задача нетривиальна, так как точка используется и в сокращениях. Таблица сокращений может сильно помочь во время обработки текста, чтобы избежать неверной расстановки границ предложений. В большинстве случаев для этого используются библиотеки, так что можете особо не переживать о деталях реализации.
+
+Пример:
+
+Возьмем небольшой текст про настольную игру нарды:
+
+Backgammon is one of the oldest known board games. Its history can be traced back nearly 5,000 years to archeological discoveries in the Middle East. It is a two player game where each player has fifteen checkers which move between twenty-four points according to the roll of two dice.
+
+Чтобы сделать токенизацию предложений с помощью NLTK, можно воспользоваться методом nltk.sent_tokenize
+
+text = "Backgammon is one of the oldest known board games. Its history can be traced back nearly 5,000 years to archeological discoveries in the Middle East. It is a two player game where each player has fifteen checkers which move between twenty-four points according to the roll of two dice."
+sentences = nltk.sent_tokenize(text)
+for sentence in sentences:
+    print(sentence)
+    print()
+view rawsentence tokenization.py hosted with ❤ by GitHub
+
+На выходе мы получим 3 отдельных предложения:
+
+Backgammon is one of the oldest known board games.
+
+Its history can be traced back nearly 5,000 years to archeological discoveries in the Middle East.
+
+It is a two player game where each player has fifteen checkers which move between twenty-four points according to the roll of two dice.
+
+2. Токенизация по словам
+
+Токенизация (иногда – сегментация) по словам – это процесс разделения предложений на слова-компоненты. В английском и многих других языках, использующих ту или иную версию латинского алфавита, пробел – это неплохой разделитель слов.
+
+Тем не менее, могут возникнуть проблемы, если мы будем использовать только пробел – в английском составные существительные пишутся по-разному и иногда через пробел. И тут вновь нам помогают библиотеки.
+
+Пример:
+
+Давайте возьмем предложения из предыдущего примера и применим к ним метод nltk.word_tokenize
+
+for sentence in sentences:
+    words = nltk.word_tokenize(sentence)
+    print(words)
+    print()
+view rawword tokenization.py hosted with ❤ by GitHub
+
+Вывод:
+
+['Backgammon', 'is', 'one', 'of', 'the', 'oldest', 'known', 'board', 'games', '.']
+
+['Its', 'history', 'can', 'be', 'traced', 'back', 'nearly', '5,000', 'years', 'to', 'archeological', 'discoveries', 'in', 'the', 'Middle', 'East', '.']
+
+['It', 'is', 'a', 'two', 'player', 'game', 'where', 'each', 'player', 'has', 'fifteen', 'checkers', 'which', 'move', 'between', 'twenty-four', 'points', 'according', 'to', 'the', 'roll', 'of', 'two', 'dice', '.']
+
+3. Лемматизация и стемминг текста
+
+Обычно тексты содержат разные грамматические формы одного и того же слова, а также могут встречаться однокоренные слова. Лемматизация и стемминг преследуют цель привести все встречающиеся словоформы к одной, нормальной словарной форме.
+
+Примеры:
+
+Приведение разных словоформ к одной:
+
+dog, dogs, dog’s, dogs’ => dog
+
+То же самое, но уже применительно к целому предложению:
+
+the boy’s dogs are different sizes => the boy dog be differ size
+
+Лемматизация и стемминг – это частные случаи нормализации и они отличаются.
+
+Стемминг – это грубый эвристический процесс, который отрезает «лишнее» от корня слов, часто это приводит к потере словообразовательных суффиксов.
+
+Лемматизация – это более тонкий процесс, который использует словарь и морфологический анализ, чтобы в итоге привести слово к его канонической форме – лемме.
+
+Отличие в том, что стеммер (конкретная реализация алгоритма стемминга – прим.переводчика) действует без знания контекста и, соответственно, не понимает разницу между словами, которые имеют разный смысл в зависимости от части речи. Однако у стеммеров есть и свои преимущества: их проще внедрить и они работают быстрее. Плюс, более низкая «аккуратность» может не иметь значения в некоторых случаях.
+
+Примеры:
+
+Слово good – это лемма для слова better. Стеммер не увидит эту связь, так как здесь нужно сверяться со словарем.
+Слово play – это базовая форма слова playing. Тут справятся и стемминг, и лемматизация.
+Слово meeting может быть как нормальной формой существительного, так и формой глагола to meet, в зависимости от контекста. В отличие от стемминга, лемматизация попробует выбрать правильную лемму, опираясь на контекст.
+
+Теперь, когда мы знаем, в чем разница, давайте рассмотрим пример:
+
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk.corpus import wordnet
+
+def compare_stemmer_and_lemmatizer(stemmer, lemmatizer, word, pos):
+    """
+    Print the results of stemmind and lemmitization using the passed stemmer, lemmatizer, word and pos (part of speech)
+    """
+    print("Stemmer:", stemmer.stem(word))
+    print("Lemmatizer:", lemmatizer.lemmatize(word, pos))
+    print()
+
+lemmatizer = WordNetLemmatizer()
+stemmer = PorterStemmer()
+compare_stemmer_and_lemmatizer(stemmer, lemmatizer, word = "seen", pos = wordnet.VERB)
+compare_stemmer_and_lemmatizer(stemmer, lemmatizer, word = "drove", pos = wordnet.VERB)
+view rawstemming vs lemmatization.py hosted with ❤ by GitHub
+
+Вывод:
+
+Stemmer: seen
+Lemmatizer: see
+
+Stemmer: drove
+Lemmatizer: drive
