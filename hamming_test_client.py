@@ -35,10 +35,13 @@ def main():
             for i, word in enumerate(words):
                 s.sendall(word)
 
-            total_err = int_convert.bytes2int(s.recv(8))
+            corrected_err_count = int_convert.bytes2int(s.recv(8))
             correct_words = int_convert.bytes2int(s.recv(8))
-            print(f'total error count. recived :  {total_err}; generated : {err_count_gen}')
-            print(f'total correct words. recived : {correct_words}; generated : {correct_wrds_gen}')
+            wrong_words = int_convert.bytes2int(s.recv(8))
+
+            print(f'total count of corrected errors : {corrected_err_count}')
+            print(f'total count of correctly delivered words : {correct_words}')
+            print(f'total count of incorrectly delivered words : {wrong_words}')
 
 
 def insert_errors(words, worng_word_rate, mode):
